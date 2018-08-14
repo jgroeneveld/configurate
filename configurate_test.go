@@ -8,9 +8,10 @@ import (
 
 func TestLoadFile(t *testing.T) {
 	config := struct {
-		AppName         string `json:"app_name"`
-		NumberOfRetries int    `json:"number_of_retries"`
-		Version         string `json:"version" default:"1.0"`
+		AppName           string  `json:"app_name"`
+		NumberOfRetries   int     `json:"number_of_retries"`
+		Version           string  `json:"version" default:"1.0"`
+		SomethingOptional *string `json:"something_optional"`
 	}{}
 
 	err := LoadFile("config.json", &config)
@@ -28,6 +29,32 @@ func TestLoadFile(t *testing.T) {
 
 	if config.Version != "1.0" {
 		t.Fatalf("Version not as specified but: %d", config.Version)
+	}
+
+	if config.SomethingOptional != nil {
+		t.Fatal("SomethingOptional is not nil")
+	}
+}
+
+func TestLoadFileWithOptional(t *testing.T) {
+	config := struct {
+		AppName           string  `json:"app_name"`
+		NumberOfRetries   int     `json:"number_of_retries"`
+		Version           string  `json:"version" default:"1.0"`
+		SomethingOptional *string `json:"something_optional"`
+	}{}
+
+	err := LoadFile("config2.json", &config)
+	if err != nil {
+		t.Fatalf("error %s", err.Error())
+	}
+
+	if config.SomethingOptional == nil {
+		t.Fatal("SomethingOptional is nil")
+	}
+
+	if *config.SomethingOptional != "the value" {
+		t.Fatalf("SomethingOptional is not as expected. is: %q", *config.SomethingOptional)
 	}
 }
 
@@ -52,7 +79,7 @@ func TestLoadAll(t *testing.T) {
 		NumberOfRetriesInJSONAndEnv int    `json:"number_of_retries" env:"NUMBER_OF_RETRIES"`
 		VersionMissing              string `json:"version" default:"1.0default"`
 	}{}
-	err = LoadAll(&config, NewJSONLoader(json), NewEnvLoader(), NewDefaultsLoader())
+	err = LoadAll(&config, NewJSONLoader(json), NewEnvLoader(), NewDefaultsLoader(), NewRequiredLoader())
 	if err != nil {
 		t.Fatalf("error %s", err.Error())
 	}
@@ -120,6 +147,45 @@ func TestJSONLoader(t *testing.T) {
 
 	if config.Number != 2 {
 		t.Fatalf("Number != %d but %d", 2, config.Number)
+	}
+}
+
+func TestRequiredLoader(t *testing.T) {
+	type requiredTestConf struct {
+		ReqYes    string
+		IntReqYes int
+		ReqNo     *string
+	}
+
+	conf := requiredTestConf{
+		ReqYes:    "present",
+		IntReqYes: 1,
+	}
+	err := NewRequiredLoader().Load(&conf)
+	if err != nil {
+		t.Fatalf("error %s", err.Error())
+	}
+
+	conf = requiredTestConf{
+		IntReqYes: 1,
+	}
+	err = NewRequiredLoader().Load(&conf)
+	if err == nil {
+		t.Fatalf("error is nil, should be present")
+	}
+	if err.Error() != "Required Value \"ReqYes\" missing" {
+		t.Fatalf("Error message not as expected. Is: %q", err.Error())
+	}
+
+	conf = requiredTestConf{
+		ReqYes: "present",
+	}
+	err = NewRequiredLoader().Load(&conf)
+	if err == nil {
+		t.Fatalf("error is nil, should be present")
+	}
+	if err.Error() != "Required Value \"IntReqYes\" missing" {
+		t.Fatalf("Error message not as expected. Is: %q", err.Error())
 	}
 }
 

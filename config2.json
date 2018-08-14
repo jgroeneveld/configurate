@@ -1,0 +1,5 @@
+{
+  "app_name": "ConfigurateJson",
+  "number_of_retries": 5,
+  "something_optional": "the value"
+}

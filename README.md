@@ -3,15 +3,16 @@
 
 configurate is a simple configuration library.
 
-It can load from JSON files, OS Environment and accepts defaults.
+It can load from JSON files, OS Environment, accepts defaults and it treats every value as required unless its a pointer.
 
 ## Example:
 
 ```
 config := struct {
-    AppName         string `json:"app_name"`
-    NumberOfRetries int    `json:"number_of_retries" env:"NUMBER_OF_RETRIES"`
-    Version         string `json:"version" default:"1.0"`
+    AppName         string  `json:"app_name"`
+    NumberOfRetries int     `json:"number_of_retries" env:"NUMBER_OF_RETRIES"`
+    Version         string  `json:"version" default:"1.0"`
+    AnOptional      *string `json:"an_optional"`
 }{}
 
 err := configurate.LoadFile("config.json", &config)

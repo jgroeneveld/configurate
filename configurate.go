@@ -17,7 +17,7 @@ func LoadFile(path string, target interface{}) error {
 		return err
 	}
 
-	return LoadAll(target, NewJSONLoader(file), NewEnvLoader(), NewDefaultsLoader())
+	return LoadAll(target, NewJSONLoader(file), NewEnvLoader(), NewDefaultsLoader(), NewRequiredLoader())
 }
 
 type Loader interface {
@@ -125,6 +125,41 @@ func (l *EnvLoader) Load(target interface{}) error {
 			f.SetInt(int64(converted))
 		default:
 			return errors.New(fmt.Sprintf("No env loader defined for type %s", field.Type))
+		}
+	}
+
+	return nil
+}
+
+type RequiredLoader struct {
+}
+
+func NewRequiredLoader() *RequiredLoader {
+	return &RequiredLoader{}
+}
+
+func (l *RequiredLoader) Load(target interface{}) error {
+	targetValue := reflect.ValueOf(target).Elem()
+	targetType := targetValue.Type()
+
+
+	for i := 0; i < targetType.NumField(); i++ {
+		field := targetType.Field(i)
+
+		f := targetValue.FieldByName(field.Name)
+		switch field.Type.Kind() {
+		case reflect.String:
+			if f.String() == "" {
+				return errors.New(fmt.Sprintf("Required Value %q missing", field.Name))
+			}
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			if f.Int() == 0 {
+				return errors.New(fmt.Sprintf("Required Value %q missing", field.Name))
+			}
+		case reflect.Ptr:
+			// ignore, pointers can be optional
+		default:
+			return errors.New(fmt.Sprintf("No required loader defined for type %s", field.Type))
 		}
 	}
 
