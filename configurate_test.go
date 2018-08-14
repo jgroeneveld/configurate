@@ -6,6 +6,45 @@ import (
 	"os"
 )
 
+func TestLoadAll(t *testing.T) {
+	reverter, err := changeEnv(map[string]string{
+		"NUMBER_OF_RETRIES": "12",
+	})
+	if err != nil {
+		t.Fatalf("error preparing env %s", err.Error())
+	}
+	defer reverter()
+
+	json := strings.NewReader(`
+{
+ "app_name": "AppNameFromJson",
+ "number_of_retries": 5
+}
+`)
+
+	config := struct {
+		AppNameFromJSON             string `json:"app_name" env:"APP_NAME" default:"configurate"`
+		NumberOfRetriesInJSONAndEnv int    `json:"number_of_retries" env:"NUMBER_OF_RETRIES"`
+		VersionMissing              string `json:"version" default:"1.0default"`
+	}{}
+	err = LoadAll(&config, NewJSONLoader(json), NewEnvLoader(), NewDefaultsLoader())
+	if err != nil {
+		t.Fatalf("error %s", err.Error())
+	}
+
+	if config.AppNameFromJSON != "AppNameFromJson" {
+		t.Fatalf("AppNameFromJSON not as specified but: %q", config.AppNameFromJSON)
+	}
+
+	if config.NumberOfRetriesInJSONAndEnv != 12 {
+		t.Fatalf("NumberOfRetriesInJSONAndEnv not as specified but: %d", config.NumberOfRetriesInJSONAndEnv)
+	}
+
+	if config.VersionMissing != "1.0default" {
+		t.Fatalf("VersionMissing not as specified but: %q", config.VersionMissing)
+	}
+}
+
 func TestDefaultsLoader(t *testing.T) {
 	config := struct {
 		Unconfigured string
@@ -66,16 +105,14 @@ func TestEnvLoader(t *testing.T) {
 		Number       int    `env:"TEST_INT"`
 	}{}
 
-	usedEnvBefore := os.Getenv("TEST_USED")
-	numberEnvBefore := os.Getenv("TEST_INT")
-	err := os.Setenv("TEST_USED", "env_value")
+	reverter, err := changeEnv(map[string]string{
+		"TEST_USED": "env_value",
+		"TEST_INT":  "2",
+	})
 	if err != nil {
 		t.Fatalf("error preparing env %s", err.Error())
 	}
-	err = os.Setenv("TEST_INT", "2")
-	if err != nil {
-		t.Fatalf("error preparing env %s", err.Error())
-	}
+	defer reverter()
 
 	err = NewEnvLoader().Load(&config)
 	if err != nil {
@@ -89,13 +126,26 @@ func TestEnvLoader(t *testing.T) {
 	if config.Number != 2 {
 		t.Fatalf("Number != %d but %d", 2, config.Number)
 	}
+}
 
-	err = os.Setenv("TEST_USED", usedEnvBefore)
-	if err != nil {
-		t.Fatalf("error resetting env %s", err.Error())
+func changeEnv(changes map[string]string) (reverter func(), err error) {
+	fallbackTo := map[string]string{}
+
+	for key, value := range changes {
+		fallbackTo[key] = os.Getenv(key)
+
+		err := os.Setenv(key, value)
+		if err != nil {
+			return nil, err
+		}
 	}
-	err = os.Setenv("TEST_INT", numberEnvBefore)
-	if err != nil {
-		t.Fatalf("error resetting env %s", err.Error())
-	}
+
+	return func() {
+		for key, value := range fallbackTo {
+			err := os.Setenv(key, value)
+			if err != nil {
+				panic(err)
+			}
+		}
+	}, nil
 }
