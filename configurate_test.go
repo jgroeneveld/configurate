@@ -6,6 +6,31 @@ import (
 	"os"
 )
 
+func TestLoadFile(t *testing.T) {
+	config := struct {
+		AppName         string `json:"app_name"`
+		NumberOfRetries int    `json:"number_of_retries"`
+		Version         string `json:"version" default:"1.0"`
+	}{}
+
+	err := LoadFile("config.json", &config)
+	if err != nil {
+		t.Fatalf("error %s", err.Error())
+	}
+
+	if config.AppName != "ConfigurateJson" {
+		t.Fatalf("AppName not as specified but: %q", config.AppName)
+	}
+
+	if config.NumberOfRetries != 5 {
+		t.Fatalf("NumberOfRetries not as specified but: %d", config.NumberOfRetries)
+	}
+
+	if config.Version != "1.0" {
+		t.Fatalf("Version not as specified but: %d", config.Version)
+	}
+}
+
 func TestLoadAll(t *testing.T) {
 	reverter, err := changeEnv(map[string]string{
 		"NUMBER_OF_RETRIES": "12",

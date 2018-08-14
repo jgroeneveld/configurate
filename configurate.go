@@ -10,6 +10,16 @@ import (
 	"os"
 )
 
+func LoadFile(path string, target interface{}) error {
+	file, err := os.Open(path)
+	defer file.Close()
+	if err != nil {
+		return err
+	}
+
+	return LoadAll(target, NewJSONLoader(file), NewEnvLoader(), NewDefaultsLoader())
+}
+
 type Loader interface {
 	Load(target interface{}) error
 }
@@ -33,7 +43,11 @@ func NewJSONLoader(reader io.Reader) *JSONLoader {
 
 func (l *JSONLoader) Load(target interface{}) error {
 	decoder := json.NewDecoder(l.Reader)
-	return decoder.Decode(target)
+	err := decoder.Decode(target)
+	if err != nil {
+		return errors.New("JSONError: " + err.Error())
+	}
+	return nil
 }
 
 type DefaultsLoader struct {
