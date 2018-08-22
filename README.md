@@ -1,4 +1,4 @@
-# jgroeneveld/configurate
+# jgroeneveld/configurate [![GoReport](https://goreportcard.com/badge/github.com/jgroeneveld/configurate)](https://goreportcard.com/report/github.com/jgroeneveld/configurate)
 
 
 configurate is a simple configuration library.
