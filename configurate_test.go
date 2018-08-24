@@ -1,9 +1,9 @@
 package configurate
 
 import (
-	"testing"
-	"strings"
 	"os"
+	"strings"
+	"testing"
 )
 
 func TestLoadFile(t *testing.T) {
@@ -28,7 +28,7 @@ func TestLoadFile(t *testing.T) {
 	}
 
 	if config.Version != "1.0" {
-		t.Fatalf("Version not as specified but: %d", config.Version)
+		t.Fatalf("Version not as specified but: %s", config.Version)
 	}
 
 	if config.SomethingOptional != nil {

@@ -1,13 +1,13 @@
 package configurate
 
 import (
-	"reflect"
 	"encoding/json"
-	"io"
 	"errors"
 	"fmt"
-	"strconv"
+	"io"
 	"os"
+	"reflect"
+	"strconv"
 )
 
 func LoadFile(path string, target interface{}) error {
@@ -141,7 +141,6 @@ func NewRequiredLoader() *RequiredLoader {
 func (l *RequiredLoader) Load(target interface{}) error {
 	targetValue := reflect.ValueOf(target).Elem()
 	targetType := targetValue.Type()
-
 
 	for i := 0; i < targetType.NumField(); i++ {
 		field := targetType.Field(i)
